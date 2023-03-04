@@ -1,0 +1,16 @@
+Static {
+}
+
+.column {
+    width: 1fr;
+}
+
+
+.box {
+    height: 1fr;
+    border: solid green;
+}
+
+#results-container{
+    height: 1fr;
+}
