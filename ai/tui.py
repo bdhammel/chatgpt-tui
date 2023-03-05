@@ -72,10 +72,31 @@ class Prompt(Input):
                 '$': self.action_end,
                 '_': self.action_home,
                 '0': self.action_home,
+                'v': chain_action(self.action_vim, self.action_ins_mode),
             }.get(event.character, None)
 
             if action is not None:
                 action()
+
+    def action_vim(self) -> None:
+        app = self.app
+        app._driver.stop_application_mode()
+        initial_text = self.value
+        try:
+            with tempfile.NamedTemporaryFile(suffix=".txt") as tf:
+                tf.write(bytes(initial_text, 'UTF-8'))
+                tf.flush()
+                tf.seek(0, 2)
+                # Need to create a separate backup copy
+                # If we don't the edited text will not be saved into the current file
+                subprocess.call([*VIM_CMD, tf.name])
+                tf.seek(0)
+                prompt = tf.read().decode("utf-8")
+        finally:
+            app.refresh()
+            app._driver.start_application_mode()
+
+        self.value = prompt
 
 
 class ConversationScreen(MarkdownViewer):
@@ -107,7 +128,6 @@ class Chat(App):
     CSS_PATH = "css/style.css"
 
     BINDINGS = [
-        ("v", "vim", "Open editor"),
         ("crtl+q", "quit", "close"),
     ]
 
@@ -126,25 +146,6 @@ class Chat(App):
         """Called when app starts."""
         # Give the input focus, so we can start typing straight away
         self.query_one(Input).focus()
-
-    async def action_vim(self) -> None:
-        self._driver.stop_application_mode()
-        initial_text = 'test '
-        try:
-            with tempfile.NamedTemporaryFile(suffix=".txt") as tf:
-                tf.write(bytes(initial_text, 'UTF-8'))
-                tf.flush()
-                tf.seek(0, 2)
-                # Need to create a separate backup copy
-                # If we don't the edited text will not be saved into the current file
-                subprocess.call([*VIM_CMD, tf.name])
-                tf.seek(0)
-                prompt = tf.read().decode("utf-8")
-        finally:
-            self.refresh()
-            self._driver.start_application_mode()
-
-        await self.ask(prompt)
 
     async def on_input_submitted(self, message: Input.Submitted) -> None:
         prompt = message.value
