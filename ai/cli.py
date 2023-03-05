@@ -1,63 +1,60 @@
-import yaml
-import openai
-import typer
+from subprocess import call
+import tempfile
+from rich.console import Console
+from rich.markdown import Markdown
+from cmd import Cmd
 
-app = typer.Typer()
-
-
-def setup():
-
-    with open('secrets.yaml') as f:
-        secrets = yaml.safe_load(f)
-
-    openai.organization = secrets["organization"]
-    openai.api_key = secrets["api_key"]
+from .ai import EchoConversation
 
 
-setup()
+class ChatUI(Cmd):
+
+    def __init__(self):
+        self.console = Console()
+        self.conversation = EchoConversation()
+        super().__init__()
+
+    def do_editor(self, args):
+        prompt = vim_input(args)
+        md = Markdown(prompt)
+        self.console.print("-"*20 + " [bold red]User[/] " + "-"*20)
+        self.console.print(md)
+        reply = self.conversation.ask(prompt)
+
+        self.render_reply(reply)
+
+    def do_ask(self, args):
+        reply = self.conversation.ask(args)
+        self.render_reply(reply)
+
+    def do_talk_to(self, persona):
+        persona = "You are " + persona
+        self.conversation.who(persona)
+
+    def render_reply(self, reply):
+        self.console.print("")
+        self.console.print("-"*20 + " [bold red]Agent[/] " + "-"*20)
+        md = Markdown(reply)
+        self.console.print(md)
+        self.console.print("")
+        self.console.print(f"Price of conversation so far: [bold red]${self.conversation.total_cost:.3f}[/]")
+        self.console.print("")
+
+    def do_quit(self, args):
+        raise SystemExit
 
 
-
-def openai_chat(messages):
-    return completion
-
-
-def mock_openai_chat(message):
-    return {
-        "choices": [
-            {
-                "finish_reason": "stop",
-                "index": 0,
-                "message": {
-                    "content": "\n\nAhoy, me hearties! Listen up for I come bearing news of the ChatGPT API. This be a fine treasure trove of an API, mark me words.\n\nYe see, ChatGPT be just the thing for all ye scallywags looking to add some piratey charm to yer chatbots and AI agents. With this API, ye can create chatbots that sound like a true-blue pirate - yarr!\n\nAnd there be more, me buckos! With ChatGPT, ye can train yer AI agents to speak like pirates, so they can help ye navigate the high seas and track down the booty. Ye can even use it to translate regular speech into pirate lingo, so ye can talk like a swashbuckler all day long.\n\nSo, if ye be looking for a fine addition to yer AI arsenal, look no further than ChatGPT. It's the treasure ye be seeking, mateys!",
-                    "role": "assistant"
-                }
-            }
-        ],
-        "created": 1677815428,
-        "id": "chatcmpl-6pqj6Oxrv69DRIQr2ywpsMghrPDqg",
-        "model": "gpt-3.5-turbo-0301",
-        "object": "chat.completion",
-        "usage": {
-            "completion_tokens": 193,
-            "prompt_tokens": 23,
-            "total_tokens": 216
-        }
-    }
+def vim_input(initial_text):
+    with tempfile.NamedTemporaryFile(suffix=".txt") as tf:
+        tf.write(bytes(initial_text, 'UTF-8'))
+        tf.flush()
+        call(['vim', '+set backupcopy=yes', tf.name])
+        tf.seek(0)
+        prompt = tf.read()
+    return prompt.decode("utf-8")
 
 
-chat_api = mock_openai_chat
-
-
-@app.command()
-def chat(message):
-
-    prompt = True
-    while prompt:
-        prompt = input(">> ")
-        res = chat_api(message)
-        print(res["choices"][0]['message']['content'])
-
-
-if __name__ == '__main__':
-    pass
+if __name__ == "__main__":
+    prompt = ChatUI()
+    prompt.prompt = '>> '
+    prompt.cmdloop("Starting chat")
