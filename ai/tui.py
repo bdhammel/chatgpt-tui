@@ -1,10 +1,17 @@
+from dataclasses import dataclass
+from rich.console import Console, ConsoleOptions, RenderResult
+
+
 from textual.app import App, ComposeResult
 import subprocess
 import tempfile
-from textual.widgets import Header, Input, Footer, MarkdownViewer
+from textual.widgets import Header, Input, Footer, TextLog
 from textual.containers import Content
 from enum import Enum
 from textual import log
+from rich.markdown import Markdown
+from rich.text import Text
+from rich.padding import Padding
 
 from ai import start_conversation
 
@@ -21,6 +28,16 @@ def chain_action(*args):
         for action in args:
             action()
     return _chain
+
+
+@dataclass
+class TextBlock:
+    speaker: str
+    message: str
+
+    def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
+        yield Text(f'{self.speaker}', style="magenta")
+        yield Markdown(self.message)
 
 
 class Prompt(Input):
@@ -96,32 +113,23 @@ class Prompt(Input):
             app.refresh()
             app._driver.start_application_mode()
 
-        self.value = prompt
+        self.post_message_no_wait(Input.Submitted(sender=self, value=prompt))
 
 
-class ConversationScreen(MarkdownViewer):
-
-    USER_HEADER = '### User:'
-    AGENT_HEADER = '### Agent:'
+class ConversationScreen(TextLog):
 
     def __init__(self, *args, **kwargs):
-        self._history = []
-        super().__init__(show_table_of_contents=False, *args, **kwargs)
+        super().__init__(wrap=True, highlight=True, markup=True, *args, **kwargs)
 
-    async def append(self, message):
-        self._history.append(message)
-        new_text = '\n\n'.join(self._history)
-        await self.document.update(new_text)
-        self.scroll_end(duration=.5)
-        self.refresh()
+    def append(self, message):
+        self.write(Padding(message, (1, 1)))
+        self.scroll_end()
 
-    async def user_says(self, message):
-        message = self.USER_HEADER + '\n\n' + message
-        await self.append(message)
+    def user_says(self, message):
+        self.append(TextBlock('User', message))
 
-    async def agent_says(self, message):
-        message = self.AGENT_HEADER + '\n\n' + message
-        await self.append(message)
+    def agent_says(self, message):
+        self.append(TextBlock('Agent', message))
 
 
 class Chat(App):
@@ -147,17 +155,17 @@ class Chat(App):
         # Give the input focus, so we can start typing straight away
         self.query_one(Input).focus()
 
-    async def on_input_submitted(self, message: Input.Submitted) -> None:
+    def on_input_submitted(self, message: Input.Submitted) -> None:
         prompt = message.value
-        await self.ask(prompt)
+        self.ask(prompt)
 
-    async def ask(self, prompt: str) -> None:
+    def ask(self, prompt: str) -> None:
         if not prompt:
             return
-        convo = self.query_one("#chat", MarkdownViewer)
-        await convo.user_says(prompt)
+        convo = self.query_one("#chat")
+        convo.user_says(prompt)
         reply = self.conversation.ask(prompt)
-        await convo.agent_says(reply)
+        convo.agent_says(reply)
 
 
 if __name__ == "__main__":
