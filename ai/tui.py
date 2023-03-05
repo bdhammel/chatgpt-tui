@@ -1,31 +1,31 @@
-from dataclasses import dataclass
-from rich.console import Console, ConsoleOptions, RenderResult
-
-
-from textual.app import App, ComposeResult
 import subprocess
 import tempfile
-from textual.widgets import Header, Input, Footer, TextLog
+from dataclasses import dataclass
 from enum import Enum
-from textual import log
+
+from rich.console import Console, ConsoleOptions, RenderResult
 from rich.markdown import Markdown
-from rich.text import Text
 from rich.padding import Padding
+from rich.text import Text
+from textual import log
+from textual.app import App, ComposeResult
+from textual.widgets import Footer, Header, Input, TextLog
 
 from ai import start_conversation
 
-VIM_CMD = ['vim', '+set backupcopy=yes', '+normal G$' '+startinsert']
+VIM_CMD = ["vim", "+set backupcopy=yes", "+normal G$" "+startinsert"]
 
 
 class VimMode(Enum):
-    INS = 'insert'
-    CMD = 'command'
+    INS = "insert"
+    CMD = "command"
 
 
 def chain_action(*args):
     def _chain():
         for action in args:
             action()
+
     return _chain
 
 
@@ -34,24 +34,25 @@ class TextBlock:
     speaker: str
     message: str
 
-    def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
-        yield Text(f'{self.speaker}', style="magenta")
+    def __rich_console__(
+        self, console: Console, options: ConsoleOptions
+    ) -> RenderResult:
+        yield Text(f"{self.speaker}", style="magenta")
         yield Markdown(self.message)
 
 
 class Prompt(Input):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.mode = VimMode.INS
         self.background_mode = {
             VimMode.INS: self.styles.background,
-            VimMode.CMD: 'blue'
+            VimMode.CMD: "blue",
         }
 
     def on_input_submitted(self, message: Input.Submitted) -> None:
         message.value = message.value
-        self.value = ''
+        self.value = ""
 
     def action_cmd_mode(self) -> None:
         self.mode = VimMode.CMD
@@ -64,7 +65,7 @@ class Prompt(Input):
     def on_key(self, event) -> None:
         log(self.parent)
         log(self.app)
-        if event.key == 'escape':
+        if event.key == "escape":
             event.prevent_default()
             event.stop()
             if self.mode is VimMode.INS:
@@ -73,22 +74,22 @@ class Prompt(Input):
             event.prevent_default()
             event.stop()
             action = {
-                'i': self.action_ins_mode,
-                'a': chain_action(self.action_cursor_right, self.action_ins_mode),
-                'A': chain_action(self.action_end, self.action_ins_mode),
-                'h': self.action_cursor_left,
-                'l': self.action_cursor_right,
-                'w': self.action_cursor_right_word,
-                'W': self.action_cursor_right_word,
-                'b': self.action_cursor_left_word,
-                'B': self.action_cursor_left_word,
-                'x': self.action_delete_right,
-                'X': self.action_delete_left,
-                'D': self.action_delete_right_all,
-                '$': self.action_end,
-                '_': self.action_home,
-                '0': self.action_home,
-                'v': chain_action(self.action_vim, self.action_ins_mode),
+                "i": self.action_ins_mode,
+                "a": chain_action(self.action_cursor_right, self.action_ins_mode),
+                "A": chain_action(self.action_end, self.action_ins_mode),
+                "h": self.action_cursor_left,
+                "l": self.action_cursor_right,
+                "w": self.action_cursor_right_word,
+                "W": self.action_cursor_right_word,
+                "b": self.action_cursor_left_word,
+                "B": self.action_cursor_left_word,
+                "x": self.action_delete_right,
+                "X": self.action_delete_left,
+                "D": self.action_delete_right_all,
+                "$": self.action_end,
+                "_": self.action_home,
+                "0": self.action_home,
+                "v": chain_action(self.action_vim, self.action_ins_mode),
             }.get(event.character, None)
 
             if action is not None:
@@ -100,7 +101,7 @@ class Prompt(Input):
         initial_text = self.value
         try:
             with tempfile.NamedTemporaryFile(suffix=".txt") as tf:
-                tf.write(bytes(initial_text, 'UTF-8'))
+                tf.write(bytes(initial_text, "UTF-8"))
                 tf.flush()
                 tf.seek(0, 2)
                 # Need to create a separate backup copy
@@ -116,7 +117,6 @@ class Prompt(Input):
 
 
 class ConversationScreen(TextLog):
-
     def __init__(self, *args, **kwargs):
         super().__init__(wrap=True, highlight=True, markup=True, *args, **kwargs)
 
@@ -125,10 +125,10 @@ class ConversationScreen(TextLog):
         self.scroll_end()
 
     async def user_says(self, message):
-        await self.append(TextBlock('User', message))
+        await self.append(TextBlock("User", message))
 
     async def agent_says(self, message):
-        await self.append(TextBlock('Agent', message))
+        await self.append(TextBlock("Agent", message))
 
 
 class Chat(App):

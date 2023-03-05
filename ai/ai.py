@@ -1,11 +1,12 @@
-import yaml
-import random
 import json
-import openai
-from pathlib import Path
-from functools import wraps
-from pydantic import BaseModel
+import random
 import time
+from functools import wraps
+from pathlib import Path
+
+import openai
+import yaml
+from pydantic import BaseModel
 
 
 class Message(BaseModel):
@@ -20,13 +21,12 @@ class Usage(BaseModel):
 
 
 class session:
-
     def __init__(self):
-        self.db_file = Path('db.json')
+        self.db_file = Path("db.json")
         self._db = None
 
     def __enter__(self):
-        self._handler = open(self.db_file, 'r+')
+        self._handler = open(self.db_file, "r+")
         self._db = json.load(self._handler)
         return self.db
 
@@ -45,11 +45,11 @@ class session:
             with self:
                 res = func(*args, **kwargs, db=self.db)
                 return res
+
         return wrapper
 
 
 class _Conversation:
-
     PRICE_PER_TOKEN = 0.002 / 1000
 
     def __init__(self):
@@ -78,11 +78,13 @@ class EchoConversation(_Conversation):
     def _send(self, msg: Message) -> Message:
         num = random.random()
         time.sleep(num)
-        msg = Message(role='Agent', content=f'mock response {num}')
+        msg = Message(role="Agent", content=f"mock response {num}")
         self._conversation.append(msg.dict())
         self.total_tokens += 0
-        text_convo = '\n'.join(f" - {m['role']}: {m['content']}" for m in self._conversation)
-        return Message(role='Agent', content=text_convo)
+        text_convo = "\n".join(
+            f" - {m['role']}: {m['content']}" for m in self._conversation
+        )
+        return Message(role="Agent", content=text_convo)
 
 
 class GPTConversation(_Conversation):
@@ -91,14 +93,16 @@ class GPTConversation(_Conversation):
 
     def __init__(self):
         super().__init__()
-        with open('secrets.yaml') as f:
+        with open("secrets.yaml") as f:
             secrets = yaml.safe_load(f)
 
         openai.organization = secrets["organization"]
         openai.api_key = secrets["api_key"]
 
     def _send(self, msg: Message):
-        res = openai.ChatCompletion.create(model=self.MODEL, messages=self._conversation)
+        res = openai.ChatCompletion.create(
+            model=self.MODEL, messages=self._conversation
+        )
         msg, usage = parse_response(res)
         self._conversation.append(msg.dict())
         self.total_tokens += usage.total_tokens
@@ -119,6 +123,6 @@ def test(db):
 
 
 def parse_response(res):
-    msg = Message(**res['choices'][0]['message'])
-    usage = Usage(**res['usage'])
+    msg = Message(**res["choices"][0]["message"])
+    usage = Usage(**res["usage"])
     return msg, usage
