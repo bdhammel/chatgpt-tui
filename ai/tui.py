@@ -6,7 +6,6 @@ from textual.app import App, ComposeResult
 import subprocess
 import tempfile
 from textual.widgets import Header, Input, Footer, TextLog
-from textual.containers import Content
 from enum import Enum
 from textual import log
 from rich.markdown import Markdown
@@ -145,8 +144,7 @@ class Chat(App):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        with Content(id="results-container"):
-            yield ConversationScreen(id="chat")
+        yield ConversationScreen(id="chat")
         yield Prompt(placeholder="Prompt", classes="prompt", id="prompt")
         yield Footer()
 

@@ -1,16 +1,23 @@
-Static {
+Screen {
 }
 
-.column {
-    width: 1fr;
+.chat-window {
+  height: 100%;
 }
 
-
-.box {
-    height: 1fr;
-    border: solid green;
+Prompt {
+  padding: 0 1;
+  box-sizing: border-box;
+  width: 100%;
+  background: rgb(20, 20, 20);
+  border: tall grey;
 }
 
-#results-container{
-    height: 1fr;
+Footer {
+  background: rgb(20, 20, 20);
+}
+
+ConversationScreen {
+  background: black;
+  height: 1fr;
 }
