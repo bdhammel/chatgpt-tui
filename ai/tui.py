@@ -120,15 +120,15 @@ class ConversationScreen(TextLog):
     def __init__(self, *args, **kwargs):
         super().__init__(wrap=True, highlight=True, markup=True, *args, **kwargs)
 
-    def append(self, message):
+    async def append(self, message):
         self.write(Padding(message, (1, 1)))
         self.scroll_end()
 
-    def user_says(self, message):
-        self.append(TextBlock('User', message))
+    async def user_says(self, message):
+        await self.append(TextBlock('User', message))
 
-    def agent_says(self, message):
-        self.append(TextBlock('Agent', message))
+    async def agent_says(self, message):
+        await self.append(TextBlock('Agent', message))
 
 
 class Chat(App):
@@ -153,17 +153,17 @@ class Chat(App):
         # Give the input focus, so we can start typing straight away
         self.query_one(Input).focus()
 
-    def on_input_submitted(self, message: Input.Submitted) -> None:
+    async def on_input_submitted(self, message: Input.Submitted) -> None:
         prompt = message.value
-        self.ask(prompt)
+        await self.ask(prompt)
 
-    def ask(self, prompt: str) -> None:
+    async def ask(self, prompt: str) -> None:
         if not prompt:
             return
         convo = self.query_one("#chat")
-        convo.user_says(prompt)
+        await convo.user_says(prompt)
         reply = self.conversation.ask(prompt)
-        convo.agent_says(reply)
+        await convo.agent_says(reply)
 
 
 if __name__ == "__main__":

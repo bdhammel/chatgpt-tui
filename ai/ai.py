@@ -5,6 +5,7 @@ import openai
 from pathlib import Path
 from functools import wraps
 from pydantic import BaseModel
+import time
 
 
 class Message(BaseModel):
@@ -76,6 +77,7 @@ class _Conversation:
 class EchoConversation(_Conversation):
     def _send(self, msg: Message) -> Message:
         num = random.random()
+        time.sleep(num)
         msg = Message(role='Agent', content=f'mock response {num}')
         self._conversation.append(msg.dict())
         self.total_tokens += 0
@@ -108,7 +110,6 @@ def start_conversation(debug=False):
         Conversation = EchoConversation
     else:
         Conversation = GPTConversation
-
     return Conversation()
 
 
