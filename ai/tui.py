@@ -1,3 +1,4 @@
+import argparse
 import subprocess
 import sys
 import tempfile
@@ -166,7 +167,10 @@ class Chat(App):
 
 
 def main():
-    app = Chat(debug=True)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--debug", action="store_true")
+    args = parser.parse_args()
+    app = Chat(debug=args.debug)
     app.run()
 
 
