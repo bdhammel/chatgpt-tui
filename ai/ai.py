@@ -1,6 +1,6 @@
 import json
 import random
-import time
+import asyncio
 from functools import wraps
 from pathlib import Path
 
@@ -60,10 +60,10 @@ class _Conversation:
         msg = Message(role="system", content=persona)
         self._conversation.append(msg.dict())
 
-    def ask(self, prompt: str) -> str:
+    async def ask(self, prompt: str) -> str:
         msg = Message(role="user", content=prompt)
         self._conversation.append(msg.dict())
-        msg = self._send(msg)
+        msg = await self._send(msg)
         return msg.content
 
     def _send(self, msg: Message) -> Message:
@@ -75,9 +75,9 @@ class _Conversation:
 
 
 class EchoConversation(_Conversation):
-    def _send(self, msg: Message) -> Message:
+    async def _send(self, msg: Message) -> Message:
         num = random.random()
-        time.sleep(num)
+        await asyncio.sleep(num)
         msg = Message(role="Agent", content=f"mock response {num}")
         self._conversation.append(msg.dict())
         self.total_tokens += 0
@@ -99,8 +99,8 @@ class GPTConversation(_Conversation):
         openai.organization = secrets["organization"]
         openai.api_key = secrets["api_key"]
 
-    def _send(self, msg: Message):
-        res = openai.ChatCompletion.create(
+    async def _send(self, msg: Message):
+        res = await openai.ChatCompletion.acreate(
             model=self.MODEL, messages=self._conversation
         )
         msg, usage = parse_response(res)

@@ -97,6 +97,7 @@ class Prompt(Input):
 
     def action_vim(self) -> None:
         app = self.app
+        assert app._driver is not None
         app._driver.stop_application_mode()
         initial_text = self.value
         try:
@@ -122,7 +123,7 @@ class ConversationScreen(TextLog):
 
     async def append(self, message):
         self.write(Padding(message, (1, 1)))
-        self.scroll_end()
+        self.scroll_end(animate=True, duration=1)
 
     async def user_says(self, message):
         await self.append(TextBlock("User", message))
@@ -138,8 +139,8 @@ class Chat(App):
         ("crtl+q", "quit", "close"),
     ]
 
-    def __init__(self, *args, **kwargs):
-        self.conversation = start_conversation(debug=True)
+    def __init__(self, debug, *args, **kwargs):
+        self.conversation = start_conversation(debug=debug)
         super().__init__(*args, **kwargs)
 
     def compose(self) -> ComposeResult:
@@ -160,12 +161,12 @@ class Chat(App):
     async def ask(self, prompt: str) -> None:
         if not prompt:
             return
-        convo = self.query_one("#chat")
+        convo = self.query_one("#chat", ConversationScreen)
         await convo.user_says(prompt)
-        reply = self.conversation.ask(prompt)
+        reply = await self.conversation.ask(prompt)
         await convo.agent_says(reply)
 
 
 if __name__ == "__main__":
-    app = Chat()
+    app = Chat(debug=True)
     app.run()
