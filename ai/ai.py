@@ -8,6 +8,12 @@ import openai
 import yaml
 from pydantic import BaseModel
 
+import pathlib
+
+from setuptools import setup
+
+HERE = pathlib.Path(__file__).parent
+
 
 class Message(BaseModel):
     role: str
@@ -93,7 +99,7 @@ class GPTConversation(_Conversation):
 
     def __init__(self):
         super().__init__()
-        with open("secrets.yaml") as f:
+        with open(HERE.parent / "secrets.yaml") as f:
             secrets = yaml.safe_load(f)
 
         openai.organization = secrets["organization"]
