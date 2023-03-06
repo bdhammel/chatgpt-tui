@@ -1,5 +1,9 @@
+![example](./media/ex.png)
 
 This is a TUI application for interacting with the openai chatGPT API.
+
+
+
 ![TUI question](./media/tui.gif)
 
 # Install
