@@ -1,8 +1,16 @@
+# ChatGPT TUI
+
+Terminal-based chat window with the chatGPT API
+
 ![example](./media/ex.png)
 
-This is a TUI application for interacting with the openai chatGPT API.
+The application currently supports:
+ - Markdown on the `user` prompt and `agent` response
+ - `vim` key bindings
 
+Other features added soon (see roadmap at the bottom)
 
+The TUI application is powered by [textualize](https://textual.textualize.io), and can be launched with the shell command `ai`.
 
 ![TUI question](./media/tui.gif)
 
