@@ -1,2 +1,3 @@
 secrets.yaml
 db.json
+*.egg-info

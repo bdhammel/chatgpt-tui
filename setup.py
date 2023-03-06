@@ -1,6 +1,6 @@
 import pathlib
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 # The directory containing this file
 HERE = pathlib.Path(__file__).parent
@@ -19,8 +19,9 @@ setup(
     author="Ben Hammel",
     author_email="bdhammel@gmail.com",
     license="MIT",
-    install_requires=["openai"],
+    install_requires=(HERE / "requirements.txt").read_text().splitlines(),
     entry_points={
         'console_scripts': ['ai=ai.tui:main'],
     },
+    packages=find_packages(),
 )
