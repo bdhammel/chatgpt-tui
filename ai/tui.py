@@ -1,4 +1,5 @@
 import subprocess
+import sys
 import tempfile
 from dataclasses import dataclass
 from enum import Enum
@@ -7,11 +8,10 @@ from rich.console import Console, ConsoleOptions, RenderResult
 from rich.markdown import Markdown
 from rich.padding import Padding
 from rich.text import Text
-from textual import log
 from textual.app import App, ComposeResult
 from textual.widgets import Footer, Header, Input, TextLog
 
-from ai import start_conversation
+from .ai import start_conversation
 
 VIM_CMD = ["vim", "+set backupcopy=yes", "+normal G$" "+startinsert"]
 
@@ -62,9 +62,7 @@ class Prompt(Input):
         self.mode = VimMode.INS
         self.styles.background = self.background_mode[self.mode]
 
-    def on_key(self, event) -> None:
-        log(self.parent)
-        log(self.app)
+    async def on_key(self, event) -> None:
         if event.key == "escape":
             event.prevent_default()
             event.stop()
@@ -167,6 +165,10 @@ class Chat(App):
         await convo.agent_says(reply)
 
 
-if __name__ == "__main__":
+def main():
     app = Chat(debug=True)
     app.run()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

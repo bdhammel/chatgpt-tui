@@ -1,6 +1,6 @@
+import asyncio
 import json
 import random
-import asyncio
 from functools import wraps
 from pathlib import Path
 
@@ -66,7 +66,7 @@ class _Conversation:
         msg = await self._send(msg)
         return msg.content
 
-    def _send(self, msg: Message) -> Message:
+    async def _send(self, msg: Message) -> Message:
         raise NotImplementedError
 
     @property
