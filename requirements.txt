@@ -1,3 +1,4 @@
 openai
-typer
-tinydb
+textual
+pyyaml
+pydantic
