@@ -16,8 +16,8 @@ pressing `v` in cmd mode will open a vim editor so you and write multi-line prom
 
 # Roadmap
 
- [x] Add `vim` key bindings to prompt input
- [x] Open `vim` for multi line prompts
- [ ] Support multi key vim keybindings. e.g. `dd` `ciw` 
- [ ] Initialize conversations from different common personas. e.g. travel agent
- [ ] Save conversations to a database
+ - [x] Add `vim` key bindings to prompt input
+ - [x] Open `vim` for multi line prompts
+ - [ ] Support multi key vim keybindings. e.g. `dd` `ciw` 
+ - [ ] Initialize conversations from different common personas. e.g. travel agent
+ - [ ] Save conversations to a database
