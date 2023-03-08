@@ -8,11 +8,13 @@ from enum import Enum
 from rich.console import Console, ConsoleOptions, RenderResult
 from rich.markdown import Markdown
 from rich.padding import Padding
+from rich.prompt import Prompt as Ask
 from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.widgets import Footer, Header, Input, TextLog
 
-from .ai import start_conversation
+from ai.ai import start_conversation
+from ai.database import MetaDataSchema, session
 
 VIM_CMD = ["vim", "+set backupcopy=yes", "+normal G$" "+startinsert"]
 
@@ -166,10 +168,21 @@ class Chat(App):
         await convo.agent_says(reply)
 
 
+def first_time_setup():
+    id_ = Ask.ask("Enter your organization id")
+    api_key = Ask.ask("Enter your api-key")
+    metadata = MetaDataSchema.latest(id_=id_, api_key=api_key)
+    session().setup(metadata)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
+
+    if not session().is_setup:
+        first_time_setup()
+
     app = Chat(debug=args.debug)
     app.run()
 

@@ -1,58 +1,9 @@
 import asyncio
-import json
 import random
-from functools import wraps
-from pathlib import Path
 
 import openai
-import yaml
-from pydantic import BaseModel
 
-import pathlib
-
-from setuptools import setup
-
-HERE = pathlib.Path(__file__).parent
-
-
-class Message(BaseModel):
-    role: str
-    content: str
-
-
-class Usage(BaseModel):
-    completion_tokens: int
-    prompt_tokens: int
-    total_tokens: int
-
-
-class session:
-    def __init__(self):
-        self.db_file = Path("db.json")
-        self._db = None
-
-    def __enter__(self):
-        self._handler = open(self.db_file, "r+")
-        self._db = json.load(self._handler)
-        return self.db
-
-    @property
-    def db(self):
-        return self._db
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        self._handler.seek(0)
-        json.dump(self._db, self._handler)
-        self._handler.close()
-
-    def __call__(self, func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            with self:
-                res = func(*args, **kwargs, db=self.db)
-                return res
-
-        return wrapper
+from ai.database import MessageSchema, UsageSchema, session, Connection
 
 
 class _Conversation:
@@ -62,50 +13,43 @@ class _Conversation:
         self._conversation = []
         self.total_tokens = 0
 
-    def who(self, persona: str):
-        msg = Message(role="system", content=persona)
-        self._conversation.append(msg.dict())
-
     async def ask(self, prompt: str) -> str:
-        msg = Message(role="user", content=prompt)
+        msg = MessageSchema(role="user", content=prompt)
         self._conversation.append(msg.dict())
         msg = await self._send(msg)
         return msg.content
-
-    async def _send(self, msg: Message) -> Message:
-        raise NotImplementedError
 
     @property
     def total_cost(self) -> int:
         return self.total_tokens * self.PRICE_PER_TOKEN
 
+    async def _send(self, msg: MessageSchema) -> MessageSchema:
+        raise NotImplementedError
+
+    def start(self):
+        raise NotImplementedError
+
 
 class EchoConversation(_Conversation):
-    async def _send(self, msg: Message) -> Message:
+    async def _send(self, msg: MessageSchema) -> MessageSchema:
         num = random.random()
         await asyncio.sleep(num)
-        msg = Message(role="Agent", content=f"mock response {num}")
+        msg = MessageSchema(role="assistant", content=f"mock response {num}")
         self._conversation.append(msg.dict())
         self.total_tokens += 0
-        text_convo = "\n".join(
-            f" - {m['role']}: {m['content']}" for m in self._conversation
-        )
-        return Message(role="Agent", content=text_convo)
+        template = " - {role}: {content}"
+        text_convo = "\n".join(template.format(**m) for m in self._conversation)
+        return MessageSchema(role="assistant", content=text_convo)
+
+    @session()
+    def start(self, db: Connection):
+        pass
 
 
 class GPTConversation(_Conversation):
-    PRICE_PER_TOKEN = 0.002 / 1000
     MODEL = "gpt-3.5-turbo"
 
-    def __init__(self):
-        super().__init__()
-        with open(HERE.parent / "secrets.yaml") as f:
-            secrets = yaml.safe_load(f)
-
-        openai.organization = secrets["organization"]
-        openai.api_key = secrets["api_key"]
-
-    async def _send(self, msg: Message):
+    async def _send(self, msg: MessageSchema):
         res = await openai.ChatCompletion.acreate(
             model=self.MODEL, messages=self._conversation
         )
@@ -114,21 +58,23 @@ class GPTConversation(_Conversation):
         self.total_tokens += usage.total_tokens
         return msg
 
+    @session()
+    def start(self, db: Connection):
+        openai.organization = db.id_
+        openai.api_key = db.api_key
+
 
 def start_conversation(debug=False):
     if debug:
         Conversation = EchoConversation
     else:
         Conversation = GPTConversation
-    return Conversation()
-
-
-@session()
-def test(db):
-    pass
+    convo = Conversation()
+    convo.start()
+    return convo
 
 
 def parse_response(res):
-    msg = Message(**res["choices"][0]["message"])
-    usage = Usage(**res["usage"])
+    msg = MessageSchema(**res["choices"][0]["message"])
+    usage = UsageSchema(**res["usage"])
     return msg, usage
