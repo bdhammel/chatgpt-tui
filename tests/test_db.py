@@ -1,12 +1,21 @@
-from ai.database import session, MetaDataSchema, DBSchema, LATEST_VERSION, MessageSchema
-import pytest
 import random
 from pathlib import Path
+
+import pytest
+
+from ai.database import (
+    LATEST_VERSION,
+    Connection,
+    DBSchema,
+    MessageSchema,
+    MetaDataSchema,
+    session,
+)
 
 
 @pytest.fixture
 def empty_db_file(tmpdir):
-    return Path(tmpdir / 'db.json')
+    return Path(tmpdir / "db.json")
 
 
 @pytest.fixture
@@ -39,14 +48,13 @@ def test_initial_setup(empty_db_file):
 
 
 def test_context_handler(db_file):
-
     sess = session(db_file)
     assert sess.is_setup
     num_agents = 5
 
     with sess as db:
         for i in range(num_agents):
-            db.add(MessageSchema(role='system', content=i))
+            db.add(MessageSchema(role="system", content=i))
         expected = db.db.copy()
         db.commit()
 
@@ -56,24 +64,22 @@ def test_context_handler(db_file):
 
 
 def test_data_not_saved_if_no_commit(db_file):
-
     sess = session(db_file)
     assert sess.is_setup
 
     with sess as db:
-        db.add(MessageSchema(role='system', content='dne'))
+        db.add(MessageSchema(role="system", content="dne"))
 
     actual = DBSchema.parse_file(db_file)
     assert len(actual.agents) == 0
 
 
 def test_decorator(db_file):
-
     num_agents = 5
 
     @session(db_file)
     def foo(bar, *, db):
-        db.add(MessageSchema(role='system', content=bar))
+        db.add(MessageSchema(role="system", content=bar))
         expected = db.db.copy()
         db.commit()
         return expected
@@ -84,3 +90,16 @@ def test_decorator(db_file):
     actual = DBSchema.parse_file(db_file)
     assert len(actual.agents) == num_agents
     assert actual.dict() == expected.dict()
+
+
+def test_assert_connection(db_file):
+    conn = Connection()
+
+    with pytest.raises(AssertionError):
+        conn.commit()
+
+    with pytest.raises(AssertionError):
+        conn.add("foo")
+
+    with pytest.raises(AssertionError):
+        conn.dne

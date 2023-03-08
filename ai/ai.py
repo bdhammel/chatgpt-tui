@@ -3,7 +3,7 @@ import random
 
 import openai
 
-from ai.database import MessageSchema, UsageSchema, session, Connection
+from ai.database import Connection, MessageSchema, UsageSchema, session
 
 
 class _Conversation:

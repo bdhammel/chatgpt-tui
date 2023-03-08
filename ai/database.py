@@ -1,8 +1,8 @@
 import json
-from io import TextIOWrapper
 from functools import wraps
+from io import TextIOWrapper
 from pathlib import Path
-from typing import List, Optional, Literal
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel
 
@@ -11,7 +11,7 @@ LATEST_VERSION = 1
 
 
 class MessageSchema(BaseModel):
-    role: Literal['user', 'assistant', 'system']
+    role: Literal["user", "assistant", "system"]
     content: str
 
 
@@ -27,7 +27,7 @@ class MetaDataSchema(BaseModel):
     version: int
 
     @classmethod
-    def latest(cls, **kwargs) -> 'MetaDataSchema':
+    def latest(cls, **kwargs) -> "MetaDataSchema":
         return cls(version=LATEST_VERSION, **kwargs)
 
 
@@ -35,8 +35,16 @@ class DBSchema(MetaDataSchema):
     agents: List[MessageSchema]
 
 
-class Connection:
+def assert_connected(func):
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        assert self.db is not None
+        return func(self, *args, **kwargs)
 
+    return wrapper
+
+
+class Connection:
     def __init__(self):
         self._commit: bool = False
         self.schema = DBSchema
@@ -52,12 +60,6 @@ class Connection:
         # Only support latest version for now
         assert metadata.version == LATEST_VERSION
         self.db = self.schema(**_db)
-
-    def assert_connected(func):
-        def wrapper(self, *args, **kwargs):
-            assert self.db is not None
-            return func(self, *args, **kwargs)
-        return wrapper
 
     @assert_connected
     def commit(self):
@@ -97,7 +99,7 @@ class session:
     def setup(self, metadata: MetaDataSchema):
         conn = Connection()
         conn.initalize(metadata)
-        with open(self.db_file, 'w') as f:
+        with open(self.db_file, "w") as f:
             conn.write(f)
 
     def _connect(self) -> Connection:

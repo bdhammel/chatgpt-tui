@@ -21,7 +21,7 @@ setup(
     license="MIT",
     install_requires=(HERE / "requirements.txt").read_text().splitlines(),
     entry_points={
-        'console_scripts': ['ai=ai.tui:main'],
+        'console_scripts': ['ai=ai.cli:main'],
     },
     packages=find_packages(),
 )
