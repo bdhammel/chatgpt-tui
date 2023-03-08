@@ -1,43 +1,58 @@
 import argparse
 import sys
+import tempfile
+from pathlib import Path
 
 from rich.prompt import Prompt
 
+from ai.ai import start_conversation
 from ai.database import MetaDataSchema, session
 from ai.tui import Chat
 
+ROOT = Path(__file__).absolute().parents[1]
+DEFAULT_DB = ROOT / "db.json"
 
-def first_time_setup(id_=None, api_key=None):
-    if id_ is None:
-        id_ = Prompt.ask("Enter your organization id")
-    if api_key is None:
-        api_key = Prompt.ask("Enter your api-key")
+
+def first_time_setup():
+    id_ = Prompt.ask("Enter your organization id")
+    api_key = Prompt.ask("Enter your api-key")
     metadata = MetaDataSchema.latest(id_=id_, api_key=api_key)
     session().setup(metadata)
 
 
-def start_debug_session():
+def start_debug_chat():
+    with tempfile.NamedTemporaryFile(suffix=".json") as tmp_db:
+        db_path = Path(tmp_db.name)
+
+        session.use_database(db_path)
+        metadata = MetaDataSchema.latest(id_=1, api_key=1)
+        session().setup(metadata)
+
+        convo = start_conversation(debug=True)
+        app = Chat(conversation=convo)
+        app.run()
+
+
+def start_chat(db_path: Path):
+    session.use_database(db_path)
     if not session().is_setup:
         first_time_setup()
 
-    app = Chat(debug=True)
+    convo = start_conversation()
+    app = Chat(conversation=convo)
     app.run()
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--debug", action="store_true")
+    parser.add_argument("--db", type=Path, default=DEFAULT_DB)
     args = parser.parse_args()
 
     if args.debug:
-        start_debug_session()
-        return
-
-    if not session().is_setup:
-        first_time_setup()
-
-    app = Chat()
-    app.run()
+        start_debug_chat()
+    else:
+        start_chat(args.db)
 
 
 if __name__ == "__main__":

@@ -6,7 +6,6 @@ from typing import List, Literal, Optional
 
 from pydantic import BaseModel
 
-ROOT = Path(__file__).absolute().parents[1]
 LATEST_VERSION = 1
 
 
@@ -35,20 +34,19 @@ class DBSchema(MetaDataSchema):
     agents: List[MessageSchema]
 
 
-def assert_connected(func):
-    @wraps(func)
-    def wrapper(self, *args, **kwargs):
-        assert self.db is not None
-        return func(self, *args, **kwargs)
-
-    return wrapper
-
-
 class Connection:
-    def __init__(self):
+    def __init__(self) -> None:
         self._commit: bool = False
         self.schema = DBSchema
-        self.db = None
+        self.db: Optional[DBSchema] = None
+
+    def assert_connected(func):
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
+            assert self.db is not None
+            return func(self, *args, **kwargs)
+
+        return wrapper
 
     def initalize(self, metadata: MetaDataSchema):
         self.db = self.schema(**metadata.dict(), agents=[])
@@ -80,15 +78,25 @@ class Connection:
 
 
 class session:
-    def __init__(self, db_file: Optional[Path] = None):
-        if db_file is None:
-            db_file = ROOT / "db.json"
-        self.db_file = db_file
+    _db_path: Optional[Path] = None
+
+    def __init__(self) -> None:
         self._connection: Optional[Connection] = None
+
+    @classmethod
+    def use_database(cls, db_path: Path):
+        assert cls._db_path is None, f"Database {cls._db_path} is already being used"
+        cls._db_path = db_path
+        return cls()
+
+    @property
+    def db_path(self):
+        assert self._db_path is not None, "A database file needs to be connected"
+        return self._db_path
 
     @property
     def is_setup(self) -> bool:
-        if not self.db_file.exists():
+        if not self.db_path.exists():
             return False
 
         with self as db:
@@ -99,22 +107,22 @@ class session:
     def setup(self, metadata: MetaDataSchema):
         conn = Connection()
         conn.initalize(metadata)
-        with open(self.db_file, "w") as f:
+        with open(self.db_path, "w") as f:
             conn.write(f)
 
     def _connect(self) -> Connection:
-        assert self._connection is None
+        assert self._connection is None, "Already connected"
         conn = Connection()
         conn.connect(self._handler)
         return conn
 
     def __enter__(self) -> Connection:
-        self._handler = open(self.db_file, "r+")
+        self._handler = open(self.db_path, "r+")
         self._connection = self._connect()
         return self._connection
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        assert self._connection is not None
+        assert self._connection is not None, "No connection to exit"
         self._handler.seek(0)
         self._connection.write(self._handler)
         self._handler.close()

@@ -1,5 +1,6 @@
 import asyncio
 import random
+from typing import Dict, List, Tuple, Union
 
 import openai
 
@@ -9,8 +10,8 @@ from ai.database import Connection, MessageSchema, UsageSchema, session
 class _Conversation:
     PRICE_PER_TOKEN = 0.002 / 1000
 
-    def __init__(self):
-        self._conversation = []
+    def __init__(self) -> None:
+        self._conversation: List[Dict] = []
         self.total_tokens = 0
 
     async def ask(self, prompt: str) -> str:
@@ -20,13 +21,13 @@ class _Conversation:
         return msg.content
 
     @property
-    def total_cost(self) -> int:
+    def total_cost(self) -> float:
         return self.total_tokens * self.PRICE_PER_TOKEN
 
     async def _send(self, msg: MessageSchema) -> MessageSchema:
         raise NotImplementedError
 
-    def start(self):
+    def start(self, db: Connection):
         raise NotImplementedError
 
 
@@ -41,7 +42,6 @@ class EchoConversation(_Conversation):
         text_convo = "\n".join(template.format(**m) for m in self._conversation)
         return MessageSchema(role="assistant", content=text_convo)
 
-    @session()
     def start(self, db: Connection):
         pass
 
@@ -58,23 +58,26 @@ class GPTConversation(_Conversation):
         self.total_tokens += usage.total_tokens
         return msg
 
-    @session()
     def start(self, db: Connection):
         openai.organization = db.id_
         openai.api_key = db.api_key
 
 
-def start_conversation(debug=False):
+Conversation = Union[EchoConversation, GPTConversation]
+
+
+@session()
+def start_conversation(db: Connection, debug: bool = False) -> Conversation:
     if debug:
-        Conversation = EchoConversation
+        convo = EchoConversation()
     else:
-        Conversation = GPTConversation
-    convo = Conversation()
-    convo.start()
+        convo = GPTConversation()
+
+    convo.start(db)
     return convo
 
 
-def parse_response(res):
+def parse_response(res: Dict) -> Tuple[MessageSchema, UsageSchema]:
     msg = MessageSchema(**res["choices"][0]["message"])
     usage = UsageSchema(**res["usage"])
     return msg, usage

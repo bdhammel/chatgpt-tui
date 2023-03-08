@@ -10,8 +10,6 @@ from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.widgets import Footer, Header, Input, TextLog
 
-from ai.ai import start_conversation
-
 VIM_CMD = ["vim", "+set backupcopy=yes", "+normal G$" "+startinsert"]
 
 
@@ -136,8 +134,8 @@ class Chat(App):
         ("crtl+q", "quit", "close"),
     ]
 
-    def __init__(self, debug, *args, **kwargs):
-        self.conversation = start_conversation(debug=debug)
+    def __init__(self, conversation, *args, **kwargs):
+        self.conversation = conversation
         super().__init__(*args, **kwargs)
 
     def compose(self) -> ComposeResult:
