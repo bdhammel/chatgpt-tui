@@ -2,9 +2,9 @@ import json
 from functools import wraps
 from io import TextIOWrapper
 from pathlib import Path
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Type
 
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 
 LATEST_VERSION = 1
 
@@ -20,18 +20,29 @@ class UsageSchema(BaseModel):
     total_tokens: int
 
 
+class AgentSchema(BaseModel):
+    name: str
+    instructions: MessageSchema
+
+    @validator("instructions")
+    def role_must_be_system(cls, v):
+        if v.role != "system":
+            raise ValueError("Agent's role must be `system`")
+        return v
+
+
 class MetaDataSchema(BaseModel):
     api_key: str
     id_: str
     version: int
 
     @classmethod
-    def latest(cls, **kwargs) -> "MetaDataSchema":
+    def latest(cls, **kwargs) -> Type["MetaDataSchema"]:
         return cls(version=LATEST_VERSION, **kwargs)
 
 
 class DBSchema(MetaDataSchema):
-    agents: List[MessageSchema]
+    agents: List[AgentSchema]
 
 
 class Connection:
@@ -136,3 +147,11 @@ class session:
                 return res
 
         return wrapper
+
+
+def add_agent(name: str, instructions: str, db: Connection):
+    db.add(
+        AgentSchema(
+            name=name, instructions=MessageSchema(role="system", content=instructions)
+        )
+    )

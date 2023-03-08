@@ -1,5 +1,4 @@
 import random
-from pathlib import Path
 
 import pytest
 
@@ -7,38 +6,10 @@ from ai.database import (
     LATEST_VERSION,
     Connection,
     DBSchema,
-    MessageSchema,
     MetaDataSchema,
+    add_agent,
     session,
 )
-
-
-@pytest.fixture(autouse=True)
-def clear_session():
-    yield
-    session._db_path = None
-
-
-@pytest.fixture
-def empty_db_file(tmpdir):
-    return Path(tmpdir / "db.json")
-
-
-@pytest.fixture()
-def db_file(empty_db_file):
-    db_file = empty_db_file
-    sess = session.use_database(db_file)
-    id_ = random.random()
-    api_key = random.random()
-    metadata = MetaDataSchema.latest(id_=id_, api_key=api_key)
-    sess.setup(metadata)
-    return db_file
-
-
-@pytest.fixture
-def active_session(db_file):
-    yield
-    session._db_path = None
 
 
 def test_initial_setup(empty_db_file):
@@ -68,7 +39,7 @@ def test_context_handler():
 
     with sess as db:
         for i in range(num_agents):
-            db.add(MessageSchema(role="system", content=i))
+            add_agent(name=f"agent-{i}", instructions=i, db=db)
         expected = db.db.copy()
         db.commit()
 
@@ -84,7 +55,7 @@ def test_data_not_saved_if_no_commit():
     assert sess.is_setup
 
     with sess as db:
-        db.add(MessageSchema(role="system", content="dne"))
+        add_agent(name="agent", instructions="dne", db=db)
 
     actual = DBSchema.parse_file(db_path)
     assert len(actual.agents) == 0
@@ -98,7 +69,7 @@ def test_decorator():
 
     @sess
     def foo(bar, *, db):
-        db.add(MessageSchema(role="system", content=bar))
+        add_agent(name="agent", instructions=bar, db=db)
         expected = db.db.copy()
         db.commit()
         return expected
