@@ -2,7 +2,7 @@ import json
 from functools import wraps
 from io import TextIOWrapper
 from pathlib import Path
-from typing import List, Literal, Optional, Type
+from typing import Callable, List, Literal, Optional
 
 from pydantic import BaseModel, validator
 
@@ -31,13 +31,16 @@ class AgentSchema(BaseModel):
         return v
 
 
-class MetaDataSchema(BaseModel):
-    api_key: str
+class Credentials(BaseModel):
     id_: str
+    api_key: str
+
+
+class MetaDataSchema(Credentials):
     version: int
 
     @classmethod
-    def latest(cls, **kwargs) -> Type["MetaDataSchema"]:
+    def latest(cls, **kwargs) -> "MetaDataSchema":
         return cls(version=LATEST_VERSION, **kwargs)
 
 
@@ -45,19 +48,20 @@ class DBSchema(MetaDataSchema):
     agents: List[AgentSchema]
 
 
+def assert_connected(func: Callable) -> Callable:
+    @wraps(func)
+    def wrapper(self: "Connection", *args, **kwargs):
+        assert self.db is not None
+        return func(self, *args, **kwargs)
+
+    return wrapper
+
+
 class Connection:
     def __init__(self) -> None:
         self._commit: bool = False
         self.schema = DBSchema
         self.db: Optional[DBSchema] = None
-
-    def assert_connected(func):
-        @wraps(func)
-        def wrapper(self, *args, **kwargs):
-            assert self.db is not None
-            return func(self, *args, **kwargs)
-
-        return wrapper
 
     def initalize(self, metadata: MetaDataSchema):
         self.db = self.schema(**metadata.dict(), agents=[])
@@ -150,8 +154,8 @@ class session:
 
 
 def add_agent(name: str, instructions: str, db: Connection):
-    db.add(
-        AgentSchema(
-            name=name, instructions=MessageSchema(role="system", content=instructions)
-        )
+    agent = AgentSchema(
+        name=name, instructions=MessageSchema(role="system", content=instructions)
     )
+    db.add(agent)
+    return agent

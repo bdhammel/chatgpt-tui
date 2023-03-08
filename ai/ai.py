@@ -1,17 +1,20 @@
 import asyncio
 import random
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import openai
 
-from ai.database import Connection, MessageSchema, UsageSchema, session
+from ai.database import AgentSchema, Credentials, MessageSchema, UsageSchema
 
 
 class _Conversation:
     PRICE_PER_TOKEN = 0.002 / 1000
 
-    def __init__(self) -> None:
-        self._conversation: List[Dict] = []
+    def __init__(self, who: Optional[AgentSchema] = None) -> None:
+        conversations = []
+        if who is not None:
+            conversations.append(who.instructions.dict())
+        self._conversation: List[Dict] = conversations
         self.total_tokens = 0
 
     async def ask(self, prompt: str) -> str:
@@ -27,7 +30,7 @@ class _Conversation:
     async def _send(self, msg: MessageSchema) -> MessageSchema:
         raise NotImplementedError
 
-    def start(self, db: Connection):
+    def start(self, credentials: Credentials):
         raise NotImplementedError
 
 
@@ -42,7 +45,7 @@ class EchoConversation(_Conversation):
         text_convo = "\n".join(template.format(**m) for m in self._conversation)
         return MessageSchema(role="assistant", content=text_convo)
 
-    def start(self, db: Connection):
+    def start(self, credentials: Credentials):
         pass
 
 
@@ -58,23 +61,12 @@ class GPTConversation(_Conversation):
         self.total_tokens += usage.total_tokens
         return msg
 
-    def start(self, db: Connection):
-        openai.organization = db.id_
-        openai.api_key = db.api_key
+    def start(self, credentials: Credentials):
+        openai.organization = credentials.id_
+        openai.api_key = credentials.api_key
 
 
 Conversation = Union[EchoConversation, GPTConversation]
-
-
-@session()
-def start_conversation(db: Connection, debug: bool = False) -> Conversation:
-    if debug:
-        convo = EchoConversation()
-    else:
-        convo = GPTConversation()
-
-    convo.start(db)
-    return convo
 
 
 def parse_response(res: Dict) -> Tuple[MessageSchema, UsageSchema]:
