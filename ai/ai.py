@@ -20,14 +20,14 @@ class _Conversation:
     async def ask(self, prompt: str) -> str:
         msg = MessageSchema(role="user", content=prompt)
         self._conversation.append(msg.dict())
-        msg = await self._send(msg)
+        msg = await self._send()
         return msg.content
 
     @property
     def total_cost(self) -> float:
         return self.total_tokens * self.PRICE_PER_TOKEN
 
-    async def _send(self, msg: MessageSchema) -> MessageSchema:
+    async def _send(self) -> MessageSchema:
         raise NotImplementedError
 
     def start(self, credentials: Credentials):
@@ -35,7 +35,7 @@ class _Conversation:
 
 
 class EchoConversation(_Conversation):
-    async def _send(self, msg: MessageSchema) -> MessageSchema:
+    async def _send(self) -> MessageSchema:
         num = random.random()
         await asyncio.sleep(num)
         msg = MessageSchema(role="assistant", content=f"mock response {num}")
@@ -52,7 +52,7 @@ class EchoConversation(_Conversation):
 class GPTConversation(_Conversation):
     MODEL = "gpt-3.5-turbo"
 
-    async def _send(self, msg: MessageSchema):
+    async def _send(self) -> MessageSchema:
         res = await openai.ChatCompletion.acreate(
             model=self.MODEL, messages=self._conversation
         )

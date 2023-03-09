@@ -116,14 +116,14 @@ class ConversationScreen(TextLog):
     def __init__(self, *args, **kwargs):
         super().__init__(wrap=True, highlight=True, markup=True, *args, **kwargs)
 
-    async def append(self, message):
+    async def append(self, message: TextBlock):
         self.write(Padding(message, (1, 1)))
         self.scroll_end(animate=True, duration=1)
 
-    async def user_says(self, message):
+    async def user_says(self, message: str):
         await self.append(TextBlock("User", message))
 
-    async def agent_says(self, message):
+    async def agent_says(self, message: str):
         await self.append(TextBlock("Agent", message))
 
 
