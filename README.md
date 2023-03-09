@@ -17,7 +17,7 @@ The TUI application is powered by [textualize](https://textual.textualize.io), a
 # Install
 
  1. clone this repo
- 2. Add a `secrets.yaml` file at the root level with you company id and api key
+ 2. Add a `secrets.yaml` file at the root level with your company id and api key
  3. `pip install -e .`
  4. You can now start the chat from any directory by typing the command `$ ai`
 
