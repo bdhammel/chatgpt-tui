@@ -52,6 +52,7 @@ def first_time_setup():
     ok_to_setup = Confirm.ask(f"Adding folders to: {ROOT}.\nIs this okay?")
     if not ok_to_setup:
         raise SystemExit("Sorry about that")
+    ROOT.mkdir()
     id_ = Prompt.ask("Enter your organization id")
     api_key = Prompt.ask("Enter your api-key")
     metadata = database.MetaDataSchema.latest(id_=id_, api_key=api_key)

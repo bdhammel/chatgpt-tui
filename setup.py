@@ -6,11 +6,11 @@ from setuptools import setup, find_packages
 HERE = pathlib.Path(__file__).parent
 
 # The text of the README file
-README = ''
+README = (HERE / 'README.md').read_text()
 
 # This call to setup() does all the work
 setup(
-    name="ai",
+    name="aitui",
     version="0.0.1",
     description="",
     long_description=README,
@@ -24,4 +24,5 @@ setup(
         'console_scripts': ['ai=ai.cli:main'],
     },
     packages=find_packages(),
+    include_package_data=True
 )
