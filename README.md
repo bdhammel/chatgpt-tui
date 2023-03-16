@@ -10,6 +10,11 @@ Terminal-based chat window with the chatGPT API
 
 # Install
 
+```
+pip install aitui
+```
+
+## Development 
  1. clone this repo
  3. `pip install -e .`
  4. You can now start the chat from any directory by typing the command `$ ai`
@@ -41,10 +46,10 @@ Note: There are some limitations with the vim key bindings. I've found I need to
  - [x] Initialize conversations from different common personas. e.g. travel agent
  - [ ] Save conversations to a database
  - [ ] Output running cost of the conversation
- - [ ] Publish to PyPi
+ - [x] Publish to PyPi
  
  
 # Credits
 
-The TUI application is powered by [textualize](https://textual.textualize.io)
+The TUI application is powered by [textualize](https://textual.textualize.io)  
 OpenAI (of course)
