@@ -1,6 +1,7 @@
 # ChatGPT TUI
 
 ![test passing status](https://github.com/bdhammel/chatgpt-tui/actions/workflows/python-app.yml/badge.svg)
+[![Upload Python Package](https://github.com/bdhammel/chatgpt-tui/actions/workflows/python-publish.yml/badge.svg)](https://github.com/bdhammel/chatgpt-tui/actions/workflows/python-publish.yml)
 
 
 Terminal-based chat window with the chatGPT API
