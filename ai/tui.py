@@ -109,7 +109,7 @@ class Prompt(Input):
             app.refresh()
             app._driver.start_application_mode()
 
-        self.post_message_no_wait(Input.Submitted(sender=self, value=prompt))
+        self.post_message(Input.Submitted(input=self, value=prompt))
 
 
 class ConversationScreen(TextLog):
